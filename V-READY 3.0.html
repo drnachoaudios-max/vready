@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>OneSOUL ZeroCheck — Inspección Vehicular</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #D72B2B; --red-dark: #A81E1E; --red-light: #F5DADA; --bg: #F4F2EE;
+    --card: #FFFFFF; --text: #1A1A1A; --text-muted: #6B6B6B; --border: #E0DDD8;
+    --bien: #2A7D4F; --bien-bg: #E6F4ED; --mal: #C0392B; --mal-bg: #FDECEA;
+    --na: #7A7A7A; --na-bg: #F0F0F0; --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding-bottom: 100px; }
+  .header { background: var(--red); padding: 15px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(215,43,43,0.3); display: flex; align-items: center; gap: 15px; }
+  .header-titles { flex: 1; display: flex; flex-direction: column; }
+  .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; color: white; font-size: 20px; letter-spacing: 1px; line-height: 1.2; }
+  .header-subtitle { color: rgba(255,255,255,0.9); font-size: 10px; font-weight: 400; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+  
+  .nav-tabs { display: flex; gap: 6px; padding: 10px 20px; overflow-x: auto; background: #c12020; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+  .nav-tab { padding: 6px 12px; border-radius: 20px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: rgba(255,255,255,0.2); color: white; white-space: nowrap; }
+  .nav-tab.active { background: white; color: var(--red); }
+
+  .screen { display: none; padding: 20px; }
+  .screen.active { display: block; }
+  .card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--red); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field label { display: block; font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field input, .field select { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--red); }
+  .check-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .check-item-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .check-label { font-size: 14px; flex: 1; color: var(--text); font-weight: 400; }
+  .btn-group { display: flex; gap: 4px; }
+  .btn-check { padding: 5px 9px; border-radius: 8px; border: 1.5px solid var(--border); font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; cursor: pointer; background: white; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  .selected-bien { background: var(--bien-bg) !important; border-color: var(--bien) !important; color: var(--bien) !important; }
+  .selected-mal { background: var(--mal-bg) !important; border-color: var(--mal) !important; color: var(--mal) !important; }
+  .selected-na { background: var(--na-bg) !important; border-color: var(--na) !important; color: var(--na) !important; }
+
+  .comment-input { width: 100%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1.5px solid var(--border); display: none; font-family: 'DM Sans', sans-serif; font-size: 13px; background: #fafafa; }
+  .comment-input.visible { display: block; }
+  
+  .progress-wrap { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--red); width: 0%; transition: width 0.3s ease; }
+  
+  .btn-submit { width: 100%; padding: 16px; background: var(--red); color: white; border: none; border-radius: 14px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(215,43,43,0.2); }
+  .btn-submit:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
+
+  /* HISTORIAL LOCAL */
+  .hist-card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); cursor: pointer; }
+  .hist-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .hist-card-info { flex: 1; }
+  .hist-card-fecha { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: var(--text); }
+  .hist-card-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .hist-badge { padding: 4px 10px; border-radius: 20px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .hist-badge.ok { background: var(--bien-bg); color: var(--bien); }
+  .hist-badge.warn { background: var(--mal-bg); color: var(--mal); }
+  .hist-stats { display: flex; gap: 8px; }
+  .hist-stat { flex: 1; text-align: center; padding: 7px 4px; border-radius: 8px; }
+  .hist-stat span { display: block; }
+  .hist-stat .num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; }
+  .hist-stat .lbl { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .hist-stat.s-bien { background: var(--bien-bg); color: var(--bien); }
+  .hist-stat.s-mal { background: var(--mal-bg); color: var(--mal); }
+  .hist-stat.s-na { background: var(--na-bg); color: var(--na); }
+  .hist-empty { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+  .hist-empty .ico { font-size: 40px; margin-bottom: 10px; }
+  .hist-empty .tit { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 6px; }
+  .hist-empty .desc { font-size: 13px; line-height: 1.5; }
+
+  /* MODAL DETALLE */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--bg); border-radius: 24px 24px 0 0; width: 100%; max-height: 85vh; overflow-y: auto; padding: 20px 20px 40px; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 99px; margin: 0 auto 16px; }
+  .modal-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; margin-bottom: 2px; }
+  .modal-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .modal-sec-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--red); margin: 14px 0 6px; }
+  .modal-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px; }
+  .modal-item:last-child { border-bottom: none; }
+  .modal-item-name { flex: 1; color: var(--text); }
+  .modal-item-note { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 2px; }
+  .modal-item-status { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; }
+  .modal-item-status.bien { background: var(--bien-bg); color: var(--bien); }
+  .modal-item-status.mal { background: var(--mal-bg); color: var(--mal); }
+  .modal-item-status.na { background: var(--na-bg); color: var(--na); }
+  .btn-modal-close { width: 100%; padding: 14px; background: var(--text); color: white; border: none; border-radius: 12px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 16px; }
+  .btn-eliminar { width: 100%; padding: 10px; background: var(--mal-bg); color: var(--mal); border: 1.5px solid var(--mal); border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-titles">
+    <div class="logo-text">OneSOUL</div>
+    <div class="header-subtitle">V-Ready</div>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" id="tab-nueva" onclick="showScreen('nueva')">Nueva Inspección</button>
+  <button class="nav-tab" id="tab-historial" onclick="showScreen('historial')">Historial Local</button>
+</div>
+
+<div class="screen active" id="screen-nueva">
+  <div class="progress-wrap">
+    <div class="progress-header">
+      <span>Progreso</span>
+      <span id="prog-count">0 / 24</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-bar"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Datos Generales</div>
+    <div class="field-row">
+      <div class="field"><label>Fecha</label><input type="date" id="f-fecha"></div>
+      <div class="field"><label>Turno</label><select id="f-turno"><option>Matutino</option><option>Vespertino</option><option>Nocturno</option></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Conductor</label><input type="text" id="f-conductor"></div>
+      <div class="field"><label>Área</label><input type="text" id="f-area"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>No. Eco</label><input type="text" id="f-noeco"></div>
+      <div class="field"><label>KM Actual</label><input type="number" id="f-km"></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">🛢️ Sección 1: Niveles</div><div id="items-sec0"></div></div>
+  <div class="card"><div class="card-title">👁️ Sección 2: Visual</div><div id="items-sec1"></div></div>
+  <div class="card"><div class="card-title">⚙️ Sección 3: Operacional</div><div id="items-sec2"></div></div>
+  <button class="btn-submit" id="btn-guardar" onclick="guardarRevision()" disabled>GUARDAR INSPECCIÓN</button>
+</div>
+
+<div class="screen" id="screen-historial">
+  <div style="height:4px"></div>
+  <div id="historial-content"></div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModalSiOverlay(event)">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const urlExcel = "https://script.google.com/macros/s/AKfycbzEOp1iMjpigibO24Nk7izOsvxJXsqA2txZ9x7FWkqwcq29zR_j5IACRlKfn2QxVaqjNw/exec";
+const ITEMS = [
+  { id: 1, label: "Aceite Motor", sec: 0 }, { id: 2, label: "Refrigerante", sec: 0 },
+  { id: 3, label: "Líq. Frenos", sec: 0 }, { id: 4, label: "Limpiaparabrisas", sec: 0 },
+  { id: 5, label: "Combustible", sec: 0 }, { id: 6, label: "Fugas", sec: 0 },
+  { id: 7, label: "360° Vehículo", sec: 1 }, { id: 8, label: "Vidrios/Espejos", sec: 1 },
+  { id: 9, label: "Calza", sec: 1 }, { id: 10, label: "Torreta", sec: 1 },
+  { id: 11, label: "Conos", sec: 1 }, { id: 12, label: "Cinturones", sec: 1 },
+  { id: 13, label: "Extintor", sec: 1 }, { id: 14, label: "Refacción", sec: 1 },
+  { id: 15, label: "Gato", sec: 1 }, { id: 16, label: "Cruceta", sec: 1 },
+  { id: 17, label: "Frenos", sec: 2 }, { id: 18, label: "Freno Mano", sec: 2 },
+  { id: 19, label: "Clutch", sec: 2 }, { id: 20, label: "Luces", sec: 2 },
+  { id: 21, label: "Dirección", sec: 2 }, { id: 22, label: "Llantas/Birlos", sec: 2 },
+  { id: 23, label: "Alarma/Claxon", sec: 2 }, { id: 24, label: "Limpieza", sec: 2 }
+];
+
+let respuestas = {};
+document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'historial') renderHistorial();
+}
+
+function renderItems() {
+  [0,1,2].forEach(s => {
+    const container = document.getElementById(`items-sec${s}`);
+    container.innerHTML = "";
+    ITEMS.filter(i => i.sec === s).forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'check-item';
+      div.innerHTML = `
+        <div class="check-item-top">
+          <span class="check-label">${item.id}. ${item.label}</span>
+          <div class="btn-group">
+            <button class="btn-check" id="b-${item.id}-bien" onclick="setVal(${item.id},'bien')">BIEN</button>
+            <button class="btn-check" id="b-${item.id}-mal" onclick="setVal(${item.id},'mal')">MAL</button>
+            <button class="btn-check" id="b-${item.id}-na" onclick="setVal(${item.id},'na')">N/A</button>
+          </div>
+        </div>
+        <textarea class="comment-input" id="c-${item.id}" placeholder="Escribe la observación aquí..."></textarea>`;
+      container.appendChild(div);
+    });
+  });
+}
+
+function setVal(id, v) {
+  respuestas[id] = v;
+  ['bien','mal','na'].forEach(opt => {
+    document.getElementById(`b-${id}-${opt}`).className = 'btn-check';
+  });
+  document.getElementById(`b-${id}-${v}`).classList.add(`selected-${v}`);
+  const comm = document.getElementById(`c-${id}`);
+  v === 'mal' ? comm.classList.add('visible') : comm.classList.remove('visible');
+  actualizarProgreso();
+}
+
+function actualizarProgreso() {
+  const done = Object.keys(respuestas).length;
+  document.getElementById('prog-count').innerText = `${done} / 24`;
+  document.getElementById('prog-bar').style.width = `${(done/24)*100}%`;
+  document.getElementById('btn-guardar').disabled = done < 24;
+}
+
+function guardarRevision() {
+  if (Object.keys(respuestas).length < 24) return alert("Faltan ítems por responder.");
+  let arrayRespuestas = [];
+  ITEMS.forEach(i => {
+    const valor = respuestas[i.id].toUpperCase();
+    const nota = document.getElementById(`c-${i.id}`).value;
+    arrayRespuestas.push(nota ? `${valor}: ${nota}` : valor);
+  });
+  const datos = {
+    fecha: document.getElementById('f-fecha').value,
+    turno: document.getElementById('f-turno').value,
+    conductor: document.getElementById('f-conductor').value,
+    area: document.getElementById('f-area').value,
+    noeco: document.getElementById('f-noeco').value,
+    km: document.getElementById('f-km').value,
+    respuestas_array: arrayRespuestas
+  };
+
+  const btn = document.getElementById('btn-guardar');
+  btn.innerText = "ENVIANDO...";
+  btn.disabled = true;
+  // Guardar localmente ANTES del fetch
+  const registro = {
+    id: Date.now(),
+    fecha: datos.fecha,
+    turno: datos.turno,
+    conductor: datos.conductor,
+    area: datos.area,
+    noeco: datos.noeco,
+    km: datos.km,
+    respuestas: { ...respuestas },
+    notas: {}
+  };
+  ITEMS.forEach(i => { registro.notas[i.id] = document.getElementById(`c-${i.id}`).value; });
+  const hist = getHistorial();
+  hist.unshift(registro);
+  localStorage.setItem('vready_hist', JSON.stringify(hist));
+
+  fetch(urlExcel, { method: 'POST', mode: 'no-cors', body: JSON.stringify(datos) })
+    .then(() => {
+      alert("Inspección enviada con éxito.");
+      respuestas = {};
+      renderItems();
+      document.getElementById('f-conductor').value = '';
+      document.getElementById('f-area').value = '';
+      document.getElementById('f-noeco').value = '';
+      document.getElementById('f-km').value = '';
+      document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
+      actualizarProgreso();
+      btn.innerText = "GUARDAR INSPECCIÓN";
+      btn.disabled = false;
+    })
+    .catch(() => {
+      alert("Error al enviar. Revisa tu conexión.");
+      btn.innerText = "GUARDAR INSPECCIÓN";
+      btn.disabled = false;
+    });
+}
+
+// ── HISTORIAL LOCAL ──────────────────────────────────────
+function getHistorial() {
+  try { return JSON.parse(localStorage.getItem('vready_hist') || '[]'); } catch { return []; }
+}
+
+function renderHistorial() {
+  const hist = getHistorial();
+  const container = document.getElementById('historial-content');
+  if (hist.length === 0) {
+    container.innerHTML = `<div class="hist-empty"><div class="ico">📋</div><div class="tit">Sin inspecciones aún</div><div class="desc">Las inspecciones guardadas aparecerán aquí.</div></div>`;
+    return;
+  }
+  container.innerHTML = hist.map(r => {
+    const bien = Object.values(r.respuestas).filter(v => v === 'bien').length;
+    const mal  = Object.values(r.respuestas).filter(v => v === 'mal').length;
+    const na   = Object.values(r.respuestas).filter(v => v === 'na').length;
+    const fechaFmt = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    return `
+      <div class="hist-card" onclick="abrirModal(${r.id})">
+        <div class="hist-card-header">
+          <div class="hist-card-info">
+            <div class="hist-card-fecha">${fechaFmt}</div>
+            <div class="hist-card-sub">${r.conductor}${r.turno ? ' · ' + r.turno : ''}${r.noeco ? ' · ' + r.noeco : ''}</div>
+          </div>
+          <div class="hist-badge ${mal > 0 ? 'warn' : 'ok'}">${mal > 0 ? '⚠️ Con fallas' : '✅ Sin fallas'}</div>
+        </div>
+        <div class="hist-stats">
+          <div class="hist-stat s-bien"><span class="num">${bien}</span><span class="lbl">Bien</span></div>
+          <div class="hist-stat s-mal"><span class="num">${mal}</span><span class="lbl">Mal</span></div>
+          <div class="hist-stat s-na"><span class="num">${na}</span><span class="lbl">N/A</span></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function abrirModal(id) {
+  const r = getHistorial().find(h => h.id === id);
+  if (!r) return;
+  const fechaFmt = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const secNames = ['Sección 1: Niveles', 'Sección 2: Visual', 'Sección 3: Operacional'];
+  let html = `<div class="modal-title">${r.conductor}</div>
+    <div class="modal-meta">${fechaFmt}${r.turno ? ' · Turno ' + r.turno : ''}${r.noeco ? ' · ' + r.noeco : ''}${r.km ? ' · ' + r.km + ' km' : ''}</div>`;
+  [0,1,2].forEach(sec => {
+    html += `<div class="modal-sec-title">${secNames[sec]}</div>`;
+    ITEMS.filter(i => i.sec === sec).forEach(item => {
+      const st = r.respuestas[item.id] || '—';
+      const cls = st === 'bien' ? 'bien' : st === 'mal' ? 'mal' : 'na';
+      const lbl = st === 'bien' ? 'BIEN' : st === 'mal' ? 'MAL' : st === 'na' ? 'N/A' : '—';
+      const nota = r.notas && r.notas[item.id] ? `<div class="modal-item-note">💬 ${r.notas[item.id]}</div>` : '';
+      html += `<div class="modal-item">
+        <div class="modal-item-name">${item.id}. ${item.label}${nota}</div>
+        <span class="modal-item-status ${cls}">${lbl}</span>
+      </div>`;
+    });
+  });
+  html += `<button class="btn-eliminar" onclick="eliminarRegistro(${id})">🗑️ Eliminar esta inspección</button>`;
+  html += `<button class="btn-modal-close" onclick="cerrarModal()">Cerrar</button>`;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function eliminarRegistro(id) {
+  if (!confirm('¿Eliminar esta inspección del historial local?')) return;
+  let hist = getHistorial().filter(h => h.id !== id);
+  localStorage.setItem('vready_hist', JSON.stringify(hist));
+  cerrarModal();
+  renderHistorial();
+}
+
+function cerrarModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function cerrarModalSiOverlay(e) { if (e.target === document.getElementById('modal-overlay')) cerrarModal(); }
+
+
+
+window.onload = renderItems;
+</script>
+</body>
+</html>
