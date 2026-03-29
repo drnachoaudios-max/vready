@@ -1,0 +1,15 @@
+{
+  "name": "V-Ready OneSOUL",
+  "short_name": "V-Ready",
+  "start_url": "/vready/",
+  "display": "standalone",
+  "background_color": "#D72B2B",
+  "theme_color": "#D72B2B",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/D72B2B/ffffff?text=VR",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
